@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'tirzepatid-pwa-v1';
+const CACHE_VERSION = 'tirzepatid-pwa-v2';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -9,6 +9,40 @@ const PRECACHE_URLS = [
   './icon-512.png',
   './icon-maskable-512.png'
 ];
+
+function isHtmlRequest(request) {
+  const url = new URL(request.url);
+  return (
+    request.mode === 'navigate' ||
+    url.pathname.endsWith('/') ||
+    url.pathname.endsWith('/index.html') ||
+    url.pathname.endsWith('index.html')
+  );
+}
+
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  const response = await fetch(request);
+  if (response && response.status === 200 && response.type === 'basic') {
+    const copy = response.clone();
+    caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
+  }
+  return response;
+}
+
+async function networkFirst(request) {
+  const cache = await caches.open(CACHE_VERSION);
+  try {
+    const response = await fetch(request);
+    if (response && response.status === 200) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    return (await cache.match(request)) || (await cache.match('./index.html'));
+  }
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -34,19 +68,10 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-          const copy = response.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, copy));
-          return response;
-        })
-        .catch(() => caches.match('./index.html'));
-    })
-  );
+  if (isHtmlRequest(event.request)) {
+    event.respondWith(networkFirst(event.request));
+    return;
+  }
+
+  event.respondWith(cacheFirst(event.request));
 });
