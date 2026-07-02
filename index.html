@@ -63,15 +63,10 @@
       font-size: 0.95rem;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: 480px 1fr;
-      gap: 1.25rem;
-      align-items: start;
-    }
-
-    @media (max-width: 900px) {
-      .grid { grid-template-columns: 1fr; }
+    .app-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
     }
 
     @media (max-width: 768px) {
@@ -718,8 +713,36 @@
       <p class="subtitle">Privates Bateman-Modell zur Visualisierung des modellierten Wirkstoffspiegels</p>
     </header>
 
-    <div class="grid">
-      <aside>
+    <div class="app-stack">
+        <div class="card">
+          <h2>Wirkstoffspiegel-Verlauf</h2>
+          <div class="chart-wrap">
+            <div class="chart-placeholder" id="chartPlaceholder">
+              Trage mindestens eine Injektion ein, um die Kurve zu berechnen.
+            </div>
+            <canvas id="pkChart"></canvas>
+          </div>
+
+          <div class="stats-grid" id="statsGrid">
+            <div class="stat">
+              <div class="label">Peak (letzte Woche)</div>
+              <div class="value" id="statPeak">—</div>
+            </div>
+            <div class="stat">
+              <div class="label">Trough (letzte Woche)</div>
+              <div class="value" id="statTrough">—</div>
+            </div>
+            <div class="stat">
+              <div class="label">Mittel (letzte Woche)</div>
+              <div class="value" id="statAvg">—</div>
+            </div>
+            <div class="stat">
+              <div class="label">Akkumulation</div>
+              <div class="value" id="statAccum">—</div>
+            </div>
+          </div>
+        </div>
+
         <div class="card">
           <h2>Injektions-Fahrplan</h2>
           <label class="dose-mode-label" for="doseModeMg">Dosis-Eingabe</label>
@@ -758,7 +781,7 @@
           <label for="unitMg">Einheit</label>
           <div class="unit-toggle" id="unitToggle">
             <button type="button" class="active" data-unit="mg" id="unitMg">mg (Modell)</button>
-            <button type="button" data-unit="ngml" id="unitNgml" disabled title="Aktiviere „F und Vd einbeziehen“ im Erweitert-Bereich">ng/mL</button>
+            <button type="button" data-unit="ngml" id="unitNgml">ng/mL</button>
           </div>
 
           <div style="margin-top: 0.85rem;">
@@ -818,57 +841,6 @@
           </div>
         </details>
 
-        <div class="card">
-          <h2>Daten speichern</h2>
-          <div class="data-status" id="dataFileStatus" role="status" aria-live="polite">
-            <span class="status-title" id="dataFileStatusTitle">Browser-Speicher (localStorage)</span>
-            <span class="status-detail" id="dataFileStatusDetail">Noch keine Datei verknüpft. Daten nur im Browser — bei Cache-Löschung weg.</span>
-          </div>
-          <p class="help-line" id="opfsStatus"></p>
-          <div class="data-actions">
-            <button type="button" class="btn" id="exportDataBtn">Exportieren</button>
-            <button type="button" class="btn" id="importDataBtn">Importieren</button>
-          </div>
-          <input type="file" id="importDataInput" accept=".json,application/json" class="hidden-input">
-          <div class="data-actions" style="margin-top: 0.5rem;">
-            <button type="button" class="btn btn-primary" id="linkDataFileBtn">Datei verknüpfen…</button>
-            <button type="button" class="btn" id="createDataFileBtn">Neue Datei…</button>
-          </div>
-          <button type="button" class="btn btn-sm hidden" id="unlinkDataFileBtn" style="margin-top: 0.5rem;">Verknüpfung aufheben</button>
-          <p class="help-line">Tipp: JSON-Datei im App-Ordner verknüpfen — bleibt auch bei gelöschtem Browser-Cache erhalten (Chrome/Edge).</p>
-        </div>
-      </aside>
-
-      <main>
-        <div class="card">
-          <h2>Wirkstoffspiegel-Verlauf</h2>
-          <div class="chart-wrap">
-            <div class="chart-placeholder" id="chartPlaceholder">
-              Trage mindestens eine Injektion ein, um die Kurve zu berechnen.
-            </div>
-            <canvas id="pkChart"></canvas>
-          </div>
-
-          <div class="stats-grid" id="statsGrid">
-            <div class="stat">
-              <div class="label">Peak (letzte Woche)</div>
-              <div class="value" id="statPeak">—</div>
-            </div>
-            <div class="stat">
-              <div class="label">Trough (letzte Woche)</div>
-              <div class="value" id="statTrough">—</div>
-            </div>
-            <div class="stat">
-              <div class="label">Mittel (letzte Woche)</div>
-              <div class="value" id="statAvg">—</div>
-            </div>
-            <div class="stat">
-              <div class="label">Akkumulation</div>
-              <div class="value" id="statAccum">—</div>
-            </div>
-          </div>
-        </div>
-
         <div class="card" id="symptomCard">
           <h2>Symptomtracker</h2>
           <p class="help-line">Schweregrad 0 = keine Beschwerden, 10 = maximal ausgeprägt. Reine Selbstdokumentation — kein Ersatz für ärztliche Beratung.</p>
@@ -903,7 +875,26 @@
             <canvas id="symptomChart"></canvas>
           </div>
         </div>
-      </main>
+
+        <div class="card">
+          <h2>Daten speichern</h2>
+          <div class="data-status" id="dataFileStatus" role="status" aria-live="polite">
+            <span class="status-title" id="dataFileStatusTitle">Browser-Speicher (localStorage)</span>
+            <span class="status-detail" id="dataFileStatusDetail">Noch keine Datei verknüpft. Daten nur im Browser — bei Cache-Löschung weg.</span>
+          </div>
+          <p class="help-line" id="opfsStatus"></p>
+          <div class="data-actions">
+            <button type="button" class="btn" id="exportDataBtn">Exportieren</button>
+            <button type="button" class="btn" id="importDataBtn">Importieren</button>
+          </div>
+          <input type="file" id="importDataInput" accept=".json,application/json" class="hidden-input">
+          <div class="data-actions" style="margin-top: 0.5rem;">
+            <button type="button" class="btn btn-primary" id="linkDataFileBtn">Datei verknüpfen…</button>
+            <button type="button" class="btn" id="createDataFileBtn">Neue Datei…</button>
+          </div>
+          <button type="button" class="btn btn-sm hidden" id="unlinkDataFileBtn" style="margin-top: 0.5rem;">Verknüpfung aufheben</button>
+          <p class="help-line">Tipp: JSON-Datei im App-Ordner verknüpfen — bleibt auch bei gelöschtem Browser-Cache erhalten (Chrome/Edge).</p>
+        </div>
     </div>
   </div>
 
@@ -1138,7 +1129,9 @@
         if (Number.isFinite(saved.bioavailability)) state.bioavailability = saved.bioavailability;
         if (Number.isFinite(saved.volumeDist)) state.volumeDist = saved.volumeDist;
         if (typeof saved.useFvVd === 'boolean') state.useFvVd = saved.useFvVd;
-        if (!state.useFvVd && state.unit === 'ngml') state.unit = 'mg';
+        if (!state.useFvVd && state.unit === 'ngml') {
+          state.useFvVd = true;
+        }
         state.symptomDefs = mergeSymptomDefs(saved.symptomDefs);
         state.symptomEntries = migrateSymptomEntries(saved.symptomEntries);
       }
@@ -1808,23 +1801,25 @@
       function updateUnitControls() {
         if (!state.useFvVd) {
           if (state.unit === 'ngml') {
-            state.unit = 'mg';
-            document.querySelectorAll('#unitToggle button').forEach((btn) => {
-              btn.classList.toggle('active', btn.dataset.unit === 'mg');
-            });
+            state.useFvVd = true;
+            els.useFvVd.checked = true;
           }
-          els.unitNgml.disabled = true;
-          els.unitNgml.title = 'Aktiviere „F und Vd einbeziehen“ im Erweitert-Bereich';
+        }
+        if (!state.useFvVd) {
           els.fvFields.classList.add('field-group-disabled');
           els.bioavailability.disabled = true;
           els.volumeDist.disabled = true;
         } else {
-          els.unitNgml.disabled = false;
-          els.unitNgml.title = '';
           els.fvFields.classList.remove('field-group-disabled');
           els.bioavailability.disabled = false;
           els.volumeDist.disabled = false;
         }
+        els.unitNgml.title = state.useFvVd
+          ? ''
+          : 'Aktiviert F und Vd automatisch für die ng/mL-Darstellung';
+        document.querySelectorAll('#unitToggle button').forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.unit === state.unit);
+        });
       }
 
       function updateDoseModeUI() {
@@ -2606,7 +2601,11 @@
 
         els.unitToggle.addEventListener('click', (e) => {
           const btn = e.target.closest('button[data-unit]');
-          if (!btn || btn.disabled) return;
+          if (!btn) return;
+          if (btn.dataset.unit === 'ngml') {
+            els.useFvVd.checked = true;
+            state.useFvVd = true;
+          }
           document.querySelectorAll('#unitToggle button').forEach((b) => b.classList.remove('active'));
           btn.classList.add('active');
           scheduleRender();

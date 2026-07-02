@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'tirzepatid-pwa-v2';
+const CACHE_VERSION = 'tirzepatid-pwa-v3';
 const PRECACHE_URLS = [
   './',
   './index.html',
