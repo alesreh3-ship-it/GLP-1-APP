@@ -21,9 +21,6 @@
       --muted: #5c6b7a;
       --accent: #0d6e8a;
       --accent-light: #e6f4f8;
-      --warning-bg: #fff4e5;
-      --warning-border: #f0b429;
-      --warning-text: #7a4f01;
       --danger: #c0392b;
       --success: #1e7d4a;
       --chart-line: #0d6e8a;
@@ -66,19 +63,6 @@
       font-size: 0.95rem;
     }
 
-    .disclaimer {
-      background: var(--warning-bg);
-      border: 1px solid var(--warning-border);
-      border-left: 4px solid var(--warning-border);
-      border-radius: var(--radius);
-      padding: 0.85rem 1rem;
-      margin: 1rem 0 1.25rem;
-      color: var(--warning-text);
-      font-size: 0.9rem;
-    }
-
-    .disclaimer strong { display: block; margin-bottom: 0.25rem; }
-
     .grid {
       display: grid;
       grid-template-columns: 480px 1fr;
@@ -91,12 +75,30 @@
     }
 
     @media (max-width: 480px) {
+      body {
+        overflow-x: hidden;
+      }
+
       .container {
-        padding: 0.75rem 0.65rem 1.5rem;
+        padding: 0.5rem;
+        max-width: 100%;
+      }
+
+      .card {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
       }
 
       header h1 {
-        font-size: 1.35rem;
+        font-size: 1.25rem;
+      }
+
+      .subtitle {
+        font-size: 0.85rem;
+      }
+
+      .row-2 {
+        grid-template-columns: 1fr;
       }
 
       .btn-sm {
@@ -105,15 +107,70 @@
         padding: 0.45rem 0.55rem;
       }
 
-      td input.symptom-value-input,
-      td input.clicks-input,
+      td input[type="date"] {
+        min-width: 6.5rem;
+        font-size: 0.78rem;
+      }
+
+      td input.level-input {
+        width: 3.5rem;
+        min-width: 3.5rem;
+        max-width: 3.5rem;
+        font-size: 0.85rem;
+      }
+
       td input.pen-mg-input {
+        width: 3.25rem;
+        min-width: 3.25rem;
+        max-width: 3.25rem;
         min-height: 2.75rem;
+      }
+
+      td input.clicks-input {
+        width: 2.75rem;
+        min-width: 2.75rem;
+        max-width: 2.75rem;
+        min-height: 2.75rem;
+      }
+
+      td input.symptom-value-input {
+        width: 2.5rem;
+        min-width: 2.5rem;
+        max-width: 2.5rem;
+        min-height: 2.75rem;
+      }
+
+      .computed-dose {
+        min-width: 3.5rem;
+        font-size: 0.8rem;
+        padding: 0.25rem 0.15rem;
+      }
+
+      .gap-label {
+        font-size: 0.78rem;
+      }
+
+      #symptomTable th.symptom-col {
+        height: 5rem;
+        width: 1.9rem;
+        min-width: 1.9rem;
+        max-width: 1.9rem;
+        font-size: 0.68rem;
+      }
+
+      .chart-wrap {
+        height: 260px;
+      }
+
+      .chart-wrap--symptoms {
+        height: 220px;
       }
 
       .injection-table-wrap,
       .symptom-table-wrap {
         -webkit-overflow-scrolling: touch;
+        margin: 0 -0.35rem;
+        padding: 0 0.35rem;
       }
     }
 
@@ -661,15 +718,6 @@
       <p class="subtitle">Privates Bateman-Modell zur Visualisierung des modellierten Wirkstoffspiegels</p>
     </header>
 
-    <div class="disclaimer" role="alert">
-      <strong>Haftungsausschluss</strong>
-      Dieses Tool ist ein rein mathematisches Modell für private Zwecke. Es ersetzt keine ärztliche Beratung.
-      Angezeigte Werte sind Modellwerte — kein gemessener Blutspiegel. Symptomdaten sind reine Selbstdokumentation
-      und stellen keine medizinische Diagnose dar. Ohne F/V<sub>d</sub>: relatives mg-Modell;
-      mit F/V<sub>d</sub>: physiologisch skalierte ng/mL-Darstellung. Die Präzisions-Level-Skala (0–50) ist ein
-      privates Planungsmodell und kein Ersatz für ärztliche Dosisfindung.
-    </div>
-
     <div class="grid">
       <aside>
         <div class="card">
@@ -776,6 +824,7 @@
             <span class="status-title" id="dataFileStatusTitle">Browser-Speicher (localStorage)</span>
             <span class="status-detail" id="dataFileStatusDetail">Noch keine Datei verknüpft. Daten nur im Browser — bei Cache-Löschung weg.</span>
           </div>
+          <p class="help-line" id="opfsStatus"></p>
           <div class="data-actions">
             <button type="button" class="btn" id="exportDataBtn">Exportieren</button>
             <button type="button" class="btn" id="importDataBtn">Importieren</button>
@@ -983,6 +1032,7 @@
         dataFileStatus: document.getElementById('dataFileStatus'),
         dataFileStatusTitle: document.getElementById('dataFileStatusTitle'),
         dataFileStatusDetail: document.getElementById('dataFileStatusDetail'),
+        opfsStatus: document.getElementById('opfsStatus'),
         exportDataBtn: document.getElementById('exportDataBtn'),
         importDataBtn: document.getElementById('importDataBtn'),
         importDataInput: document.getElementById('importDataInput'),
@@ -1002,6 +1052,47 @@
 
       function supportsFileSystemAccess() {
         return 'showSaveFilePicker' in window && 'showOpenFilePicker' in window;
+      }
+
+      function supportsOPFS() {
+        return 'storage' in navigator && 'getDirectory' in navigator.storage;
+      }
+
+      const OPFS_BACKUP_FILE = 'tirzepatid-backup.json';
+
+      async function saveToOPFS(payload) {
+        if (!supportsOPFS()) return;
+        try {
+          const root = await navigator.storage.getDirectory();
+          const fh = await root.getFileHandle(OPFS_BACKUP_FILE, { create: true });
+          const writable = await fh.createWritable();
+          await writable.write(JSON.stringify(payload));
+          await writable.close();
+        } catch (err) {
+          console.warn('OPFS-Backup fehlgeschlagen:', err);
+        }
+      }
+
+      async function loadFromOPFS() {
+        if (!supportsOPFS()) return null;
+        try {
+          const root = await navigator.storage.getDirectory();
+          const fh = await root.getFileHandle(OPFS_BACKUP_FILE);
+          const file = await fh.getFile();
+          return JSON.parse(await file.text());
+        } catch {
+          return null;
+        }
+      }
+
+      function updateOpfsStatus() {
+        if (!els.opfsStatus) return;
+        if (supportsOPFS()) {
+          els.opfsStatus.textContent =
+            'Zusätzliches Geräte-Backup aktiv (überlebt normales Cache-Löschen).';
+        } else {
+          els.opfsStatus.textContent = '';
+        }
       }
 
       function getStatePayload() {
@@ -2224,6 +2315,7 @@
         } catch (err) {
           console.warn('Speichern fehlgeschlagen:', err);
         }
+        saveToOPFS(payload);
         updateDataFileStatus();
         scheduleFileSave();
       }
@@ -2460,14 +2552,26 @@
         });
       }
 
-      function loadState() {
+      async function loadState() {
         if (!state.referenceDate) state.referenceDate = todayISO();
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
-          if (!raw) return;
-          const saved = JSON.parse(raw);
-          applyStatePayload(saved);
-          if (saved.savedAt) lastSavedAt = saved.savedAt;
+          if (raw) {
+            const saved = JSON.parse(raw);
+            applyStatePayload(saved);
+            if (saved.savedAt) lastSavedAt = saved.savedAt;
+            return;
+          }
+          const fromOpfs = await loadFromOPFS();
+          if (fromOpfs) {
+            applyStatePayload(fromOpfs);
+            if (fromOpfs.savedAt) lastSavedAt = fromOpfs.savedAt;
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(fromOpfs));
+            } catch (err) {
+              console.warn('localStorage-Wiederherstellung fehlgeschlagen:', err);
+            }
+          }
         } catch (err) {
           console.warn('Laden fehlgeschlagen:', err);
         }
@@ -2545,7 +2649,8 @@
 
       async function init() {
         state.referenceDate = todayISO();
-        loadState();
+        await loadState();
+        updateOpfsStatus();
         applyStateToForm();
         updateDoseModeUI();
         updateUnitControls();
