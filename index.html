@@ -1,0 +1,2577 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0d6e8a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Tirzepatid">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Tirzepatid Pharmakokinetik-Simulator</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --border: #d8e2ef;
+      --text: #1a2b3c;
+      --muted: #5c6b7a;
+      --accent: #0d6e8a;
+      --accent-light: #e6f4f8;
+      --warning-bg: #fff4e5;
+      --warning-border: #f0b429;
+      --warning-text: #7a4f01;
+      --danger: #c0392b;
+      --success: #1e7d4a;
+      --chart-line: #0d6e8a;
+      --target-band: rgba(30, 125, 74, 0.12);
+      --inj-marker: rgba(192, 57, 43, 0.35);
+      --shadow: 0 2px 12px rgba(26, 43, 60, 0.08);
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    header {
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .disclaimer {
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      border-left: 4px solid var(--warning-border);
+      border-radius: var(--radius);
+      padding: 0.85rem 1rem;
+      margin: 1rem 0 1.25rem;
+      color: var(--warning-text);
+      font-size: 0.9rem;
+    }
+
+    .disclaimer strong { display: block; margin-bottom: 0.25rem; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 480px 1fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 0.75rem 0.65rem 1.5rem;
+      }
+
+      header h1 {
+        font-size: 1.35rem;
+      }
+
+      .btn-sm {
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+        padding: 0.45rem 0.55rem;
+      }
+
+      td input.symptom-value-input,
+      td input.clicks-input,
+      td input.pen-mg-input {
+        min-height: 2.75rem;
+      }
+
+      .injection-table-wrap,
+      .symptom-table-wrap {
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .card h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+
+    input[type="number"],
+    input[type="date"],
+    select {
+      width: 100%;
+      padding: 0.45rem 0.55rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="number"]:focus,
+    input[type="date"]:focus,
+    select:focus {
+      outline: 2px solid var(--accent-light);
+      border-color: var(--accent);
+    }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.5rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .btn:hover { background: var(--accent-light); border-color: var(--accent); }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #0a5a72;
+      border-color: #0a5a72;
+    }
+
+    .btn-danger {
+      color: var(--danger);
+      border-color: #f0d0cc;
+    }
+
+    .btn-danger:hover {
+      background: #fdf0ee;
+      border-color: var(--danger);
+    }
+
+    .btn-sm {
+      padding: 0.3rem 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 0.45rem 0.35rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    td input:not(.level-input) { min-width: 0; }
+
+    .injection-table-wrap {
+      overflow-x: auto;
+      margin: 0 -0.15rem;
+      padding: 0 0.15rem;
+    }
+
+    td input[type="date"] {
+      min-width: 7.5rem;
+      font-size: 0.85rem;
+    }
+
+    td input.level-input {
+      width: 4rem;
+      min-width: 4rem;
+      max-width: 4rem;
+      padding: 0.4rem 0.35rem;
+      text-align: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      -moz-appearance: textfield;
+    }
+
+    td input.level-input::-webkit-outer-spin-button,
+    td input.level-input::-webkit-inner-spin-button {
+      opacity: 1;
+      margin: 0;
+    }
+
+    td input.pen-mg-input {
+      width: 3.75rem;
+      min-width: 3.75rem;
+      max-width: 3.75rem;
+      padding: 0.4rem 0.3rem;
+      text-align: center;
+      font-size: 0.85rem;
+    }
+
+    td input.clicks-input {
+      width: 3.25rem;
+      min-width: 3.25rem;
+      max-width: 3.25rem;
+      padding: 0.4rem 0.3rem;
+      text-align: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      -moz-appearance: textfield;
+    }
+
+    td input.clicks-input::-webkit-outer-spin-button,
+    td input.clicks-input::-webkit-inner-spin-button {
+      opacity: 1;
+      margin: 0;
+    }
+
+    .table-empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 1.25rem 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .table-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.75rem;
+      gap: 0.5rem;
+    }
+
+    details.advanced {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      padding: 0.5rem 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    details.advanced summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--accent);
+      padding: 0.35rem 0;
+      user-select: none;
+    }
+
+    details.advanced .advanced-body {
+      padding: 0.75rem 0 0.25rem;
+    }
+
+    .unit-toggle {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .unit-toggle button {
+      flex: 1;
+      padding: 0.45rem 0.6rem;
+      border: none;
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    .unit-toggle button.active {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .unit-toggle button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      background: #eef2f6;
+    }
+
+    .field-group-disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .field-group-disabled input {
+      background: #f4f7fb;
+    }
+
+    .help-line {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin: 0.35rem 0 0.75rem;
+      line-height: 1.4;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 380px;
+    }
+
+    .chart-wrap--symptoms {
+      height: 320px;
+      margin-top: 0.5rem;
+    }
+
+    .symptom-chart-title {
+      margin: 1.25rem 0 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .symptom-table-wrap {
+      margin-top: 0.75rem;
+    }
+
+    td input.symptom-value-input {
+      width: 2.75rem;
+      min-width: 2.75rem;
+      max-width: 2.75rem;
+      padding: 0.35rem 0.2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      font-variant-numeric: tabular-nums;
+      -moz-appearance: textfield;
+    }
+
+    td input.symptom-value-input::-webkit-outer-spin-button,
+    td input.symptom-value-input::-webkit-inner-spin-button {
+      opacity: 1;
+      margin: 0;
+    }
+
+    td input.symptom-note-input {
+      min-width: 6rem;
+      width: 100%;
+      font-size: 0.85rem;
+    }
+
+    .symptom-manager-group {
+      margin-bottom: 0.75rem;
+    }
+
+    .symptom-manager-group h4 {
+      margin: 0 0 0.35rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .symptom-manager-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+      font-size: 0.9rem;
+    }
+
+    .symptom-manager-item label {
+      flex: 1;
+      cursor: pointer;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .custom-symptom-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      align-items: center;
+    }
+
+    .custom-symptom-row input[type="text"] {
+      flex: 1;
+      min-width: 0;
+    }
+
+    #symptomTable th.symptom-col {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      white-space: nowrap;
+      width: 2.1rem;
+      min-width: 2.1rem;
+      max-width: 2.1rem;
+      padding: 0.4rem 0.2rem;
+      font-size: 0.72rem;
+      line-height: 1;
+      height: 6.5rem;
+      vertical-align: bottom;
+      font-weight: 600;
+    }
+
+    .symptom-header-dot {
+      display: inline-block;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      margin-bottom: 0.35rem;
+      flex-shrink: 0;
+    }
+
+    #symptomTable th.symptom-col .symptom-header-inner {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    td.symptom-value-cell {
+      text-align: center;
+      padding-left: 0.2rem;
+      padding-right: 0.2rem;
+    }
+
+    .chart-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 2rem;
+      font-size: 0.95rem;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .chart-placeholder.hidden { display: none; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 700px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .stat {
+      background: var(--accent-light);
+      border: 1px solid #c5e3ec;
+      border-radius: 8px;
+      padding: 0.75rem;
+      text-align: center;
+    }
+
+    .stat .label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat .value {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .stat .unit {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .checkbox-row input { width: auto; }
+
+    .checkbox-row label {
+      margin: 0;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    .gap-label {
+      display: inline-block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .computed-dose {
+      display: inline-block;
+      min-width: 4.5rem;
+      padding: 0.35rem 0.25rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hidden { display: none !important; }
+
+    .dose-mode-label {
+      margin: 0.75rem 0 0.35rem;
+    }
+
+    .step-actions {
+      flex-wrap: wrap;
+    }
+
+    .step-actions .btn {
+      flex: 1 1 calc(50% - 0.25rem);
+      min-width: 7rem;
+      font-size: 0.82rem;
+      padding: 0.45rem 0.5rem;
+    }
+
+    .step-actions .btn-wide {
+      flex: 1 1 100%;
+    }
+
+    .data-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .data-actions .btn {
+      flex: 1 1 calc(50% - 0.25rem);
+      min-width: 7rem;
+    }
+
+    input[type="file"].hidden-input {
+      display: none;
+    }
+
+    .data-status {
+      margin: 0.5rem 0 0.75rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      border: 1px solid var(--border);
+      background: #f0f4f8;
+      color: var(--text);
+    }
+
+    .data-status.linked {
+      background: #e8f5ec;
+      border-color: #a8d5b5;
+      color: #1e5c32;
+    }
+
+    .data-status .status-title {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    .data-status .status-detail {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .data-status.linked .status-detail {
+      color: #2d6b42;
+    }
+
+    .meta-line {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Tirzepatid Pharmakokinetik-Simulator</h1>
+      <p class="subtitle">Privates Bateman-Modell zur Visualisierung des modellierten Wirkstoffspiegels</p>
+    </header>
+
+    <div class="disclaimer" role="alert">
+      <strong>Haftungsausschluss</strong>
+      Dieses Tool ist ein rein mathematisches Modell für private Zwecke. Es ersetzt keine ärztliche Beratung.
+      Angezeigte Werte sind Modellwerte — kein gemessener Blutspiegel. Symptomdaten sind reine Selbstdokumentation
+      und stellen keine medizinische Diagnose dar. Ohne F/V<sub>d</sub>: relatives mg-Modell;
+      mit F/V<sub>d</sub>: physiologisch skalierte ng/mL-Darstellung. Die Präzisions-Level-Skala (0–50) ist ein
+      privates Planungsmodell und kein Ersatz für ärztliche Dosisfindung.
+    </div>
+
+    <div class="grid">
+      <aside>
+        <div class="card">
+          <h2>Injektions-Fahrplan</h2>
+          <label class="dose-mode-label" for="doseModeMg">Dosis-Eingabe</label>
+          <div class="unit-toggle" id="doseModeToggle">
+            <button type="button" class="active" data-mode="mg" id="doseModeMg">mg (frei)</button>
+            <button type="button" data-mode="precision" id="doseModePrecision">Level (Präzision)</button>
+          </div>
+          <p class="help-line hidden" id="precisionHint">50 Stufen (0–50, Dezimalwerte möglich), Level 50 = 15 mg. Ein Schritt ≈ 2 % (0,3 mg).</p>
+          <p class="help-line" id="clicksHint">KwikPen: 60 Klicks = volle Pen-Dosis. Pen und Klicks eingeben — Dosis wird berechnet (nicht editierbar).</p>
+          <div class="injection-table-wrap">
+          <table id="injectionTable">
+            <thead>
+              <tr id="injectionHeadRow">
+                <th>Datum</th>
+                <th>Abstand</th>
+                <th>Dosis (mg)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="injectionBody"></tbody>
+          </table>
+          </div>
+          <div id="tableEmpty" class="table-empty">Noch keine Injektionen. Füge die erste Injektion hinzu.</div>
+          <div class="table-actions" id="mgInjectionActions">
+            <button type="button" class="btn btn-primary" id="addInjectionBtn">+ Injektion</button>
+          </div>
+          <div class="table-actions step-actions hidden" id="precisionInjectionActions">
+            <button type="button" class="btn btn-primary" id="addStep1Btn">+1 Schritt</button>
+            <button type="button" class="btn btn-primary" id="addStep2Btn">+2 Schritte</button>
+            <button type="button" class="btn btn-wide" id="addSameLevelBtn">+ Injektion (gleiches Level)</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Darstellung</h2>
+          <label for="unitMg">Einheit</label>
+          <div class="unit-toggle" id="unitToggle">
+            <button type="button" class="active" data-unit="mg" id="unitMg">mg (Modell)</button>
+            <button type="button" data-unit="ngml" id="unitNgml" disabled title="Aktiviere „F und Vd einbeziehen“ im Erweitert-Bereich">ng/mL</button>
+          </div>
+
+          <div style="margin-top: 0.85rem;">
+            <div class="checkbox-row">
+              <input type="checkbox" id="showTargetBand" checked>
+              <label for="showTargetBand">Zielbereich anzeigen</label>
+            </div>
+          </div>
+
+          <div class="row-2" style="margin-top: 0.75rem;">
+            <div>
+              <label for="targetMin">Zielbereich unten</label>
+              <input type="number" id="targetMin" step="any" value="0" min="0">
+            </div>
+            <div>
+              <label for="targetMax">Zielbereich oben</label>
+              <input type="number" id="targetMax" step="any" value="5" min="0">
+            </div>
+          </div>
+        </div>
+
+        <details class="advanced" id="advancedSection">
+          <summary>Erweitert (PK-Parameter)</summary>
+          <div class="advanced-body">
+            <div class="row-2">
+              <div>
+                <label for="halfLife">Halbwertszeit T₁/₂ (Tage)</label>
+                <input type="number" id="halfLife" step="0.1" value="5.0" min="0.1">
+              </div>
+              <div>
+                <label for="tMax">T<sub>max</sub> (Tage)</label>
+                <input type="number" id="tMax" step="0.05" value="1.0" min="0.01">
+              </div>
+            </div>
+            <div style="margin-top: 0.75rem;">
+              <label for="defaultInterval">Standard-Intervall (Tage)</label>
+              <input type="number" id="defaultInterval" step="1" value="7" min="1">
+            </div>
+            <div class="checkbox-row" style="margin-top: 0.85rem;">
+              <input type="checkbox" id="useFvVd">
+              <label for="useFvVd">Bioverfügbarkeit &amp; Verteilungsvolumen einbeziehen</label>
+            </div>
+            <p class="help-line">Erforderlich für die ng/mL-Darstellung (physiologische Skalierung mit F und V<sub>d</sub>).</p>
+            <div id="fvFields" class="field-group-disabled">
+              <div class="row-2">
+                <div>
+                  <label for="bioavailability">Bioverfügbarkeit F</label>
+                  <input type="number" id="bioavailability" step="0.01" value="0.8" min="0" max="1" disabled>
+                </div>
+                <div>
+                  <label for="volumeDist">Verteilungsvolumen V<sub>d</sub> (L)</label>
+                  <input type="number" id="volumeDist" step="0.1" value="10.3" min="0.1" disabled>
+                </div>
+              </div>
+            </div>
+            <p class="meta-line" id="kaDisplay">k<sub>a</sub>: —</p>
+          </div>
+        </details>
+
+        <div class="card">
+          <h2>Daten speichern</h2>
+          <div class="data-status" id="dataFileStatus" role="status" aria-live="polite">
+            <span class="status-title" id="dataFileStatusTitle">Browser-Speicher (localStorage)</span>
+            <span class="status-detail" id="dataFileStatusDetail">Noch keine Datei verknüpft. Daten nur im Browser — bei Cache-Löschung weg.</span>
+          </div>
+          <div class="data-actions">
+            <button type="button" class="btn" id="exportDataBtn">Exportieren</button>
+            <button type="button" class="btn" id="importDataBtn">Importieren</button>
+          </div>
+          <input type="file" id="importDataInput" accept=".json,application/json" class="hidden-input">
+          <div class="data-actions" style="margin-top: 0.5rem;">
+            <button type="button" class="btn btn-primary" id="linkDataFileBtn">Datei verknüpfen…</button>
+            <button type="button" class="btn" id="createDataFileBtn">Neue Datei…</button>
+          </div>
+          <button type="button" class="btn btn-sm hidden" id="unlinkDataFileBtn" style="margin-top: 0.5rem;">Verknüpfung aufheben</button>
+          <p class="help-line">Tipp: JSON-Datei im App-Ordner verknüpfen — bleibt auch bei gelöschtem Browser-Cache erhalten (Chrome/Edge).</p>
+        </div>
+      </aside>
+
+      <main>
+        <div class="card">
+          <h2>Wirkstoffspiegel-Verlauf</h2>
+          <div class="chart-wrap">
+            <div class="chart-placeholder" id="chartPlaceholder">
+              Trage mindestens eine Injektion ein, um die Kurve zu berechnen.
+            </div>
+            <canvas id="pkChart"></canvas>
+          </div>
+
+          <div class="stats-grid" id="statsGrid">
+            <div class="stat">
+              <div class="label">Peak (letzte Woche)</div>
+              <div class="value" id="statPeak">—</div>
+            </div>
+            <div class="stat">
+              <div class="label">Trough (letzte Woche)</div>
+              <div class="value" id="statTrough">—</div>
+            </div>
+            <div class="stat">
+              <div class="label">Mittel (letzte Woche)</div>
+              <div class="value" id="statAvg">—</div>
+            </div>
+            <div class="stat">
+              <div class="label">Akkumulation</div>
+              <div class="value" id="statAccum">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="symptomCard">
+          <h2>Symptomtracker</h2>
+          <p class="help-line">Schweregrad 0 = keine Beschwerden, 10 = maximal ausgeprägt. Reine Selbstdokumentation — kein Ersatz für ärztliche Beratung.</p>
+
+          <details class="advanced" id="symptomManageDetails">
+            <summary>Symptome verwalten</summary>
+            <div class="advanced-body" id="symptomManager"></div>
+            <div class="custom-symptom-row">
+              <input type="text" id="customSymptomInput" placeholder="Eigenes Symptom…" maxlength="80">
+              <button type="button" class="btn btn-primary btn-sm" id="addCustomSymptomBtn">+ Hinzufügen</button>
+            </div>
+          </details>
+
+          <div class="injection-table-wrap symptom-table-wrap">
+            <table id="symptomTable">
+              <thead>
+                <tr id="symptomHeadRow"></tr>
+              </thead>
+              <tbody id="symptomBody"></tbody>
+            </table>
+          </div>
+          <div id="symptomTableEmpty" class="table-empty">Noch keine Einträge. Füge den ersten Symptom-Eintrag hinzu.</div>
+          <div class="table-actions">
+            <button type="button" class="btn btn-primary" id="addSymptomEntryBtn">+ Eintrag</button>
+          </div>
+
+          <h3 class="symptom-chart-title">Symptom-Verlauf</h3>
+          <div class="chart-wrap chart-wrap--symptoms">
+            <div class="chart-placeholder" id="symptomChartPlaceholder">
+              Trage mindestens einen Eintrag und ein aktives Symptom ein, um den Verlauf zu sehen.
+            </div>
+            <canvas id="symptomChart"></canvas>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="chart.min.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const STORAGE_KEY = 'tirzepatid-pk-simulator-v1';
+      const FILE_HANDLE_DB = 'tirzepatid-pk-file-db';
+      const FILE_HANDLE_STORE = 'handles';
+      const FILE_HANDLE_KEY = 'linkedFile';
+      const EXPORT_FILENAME = 'tirzepatid-daten.json';
+      const TIME_STEP = 0.25;
+      const TAIL_DAYS = 21;
+      const MAX_LEVEL = 50;
+      const MAX_DOSE_MG = 15;
+      const DEFAULT_START_LEVEL = 8;
+      const CLICKS_FULL = 60;
+      const DEFAULT_PEN_MG = 2.5;
+
+      const SYMPTOM_CATEGORIES = ['Magen-Darm', 'Allgemein', 'ME/CFS', 'POTS', 'Eigene'];
+
+      const SYMPTOM_ID_ALIASES = {
+        exhaustion: 'muedigkeit',
+        fatigue: 'muedigkeit',
+        low_mood: 'muedigkeit',
+        orthostatic: 'dizziness'
+      };
+
+      const DROPPED_SYMPTOM_IDS = new Set(['appetite_loss']);
+
+      const LEGACY_SYMPTOM_DEF_IDS = new Set([
+        ...DROPPED_SYMPTOM_IDS,
+        ...Object.keys(SYMPTOM_ID_ALIASES)
+      ]);
+
+      const CUSTOM_SYMPTOM_PALETTE = [
+        '#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f39c12',
+        '#1abc9c', '#e67e22', '#34495e', '#16a085', '#c0392b',
+        '#2980b9', '#8e44ad', '#d35400', '#27ae60', '#2c3e50'
+      ];
+
+      const DEFAULT_SYMPTOMS = [
+        { id: 'nausea', name: 'Übelkeit', shortName: 'Übelk.', category: 'Magen-Darm', color: '#c0392b', enabled: true, builtin: true },
+        { id: 'vomiting', name: 'Erbrechen', shortName: 'Erbrec.', category: 'Magen-Darm', color: '#e74c3c', enabled: true, builtin: true },
+        { id: 'diarrhea', name: 'Durchfall', shortName: 'Durchf.', category: 'Magen-Darm', color: '#d35400', enabled: true, builtin: true },
+        { id: 'constipation', name: 'Verstopfung', shortName: 'Verst.', category: 'Magen-Darm', color: '#e67e22', enabled: true, builtin: true },
+        { id: 'depression', name: 'Depressivität', shortName: 'Depr.', category: 'Allgemein', color: '#2980b9', enabled: true, builtin: true },
+        { id: 'muedigkeit', name: 'Müdigkeit', shortName: 'Müdig.', category: 'ME/CFS', color: '#0d6e8a', enabled: true, builtin: true },
+        { id: 'pem', name: 'PEM (Crash nach Belastung)', shortName: 'PEM', category: 'ME/CFS', color: '#8e44ad', enabled: true, builtin: true },
+        { id: 'brain_fog', name: 'Brain Fog', shortName: 'Fog', category: 'ME/CFS', color: '#9b59b6', enabled: true, builtin: true },
+        { id: 'unrefreshing_sleep', name: 'Unerholsamer Schlaf', shortName: 'Schlaf', category: 'ME/CFS', color: '#6c3483', enabled: true, builtin: true },
+        { id: 'dizziness', name: 'Schwindel (orthostatisch)', shortName: 'Schwind.', category: 'POTS', color: '#16a085', enabled: true, builtin: true },
+        { id: 'tachycardia', name: 'Herzrasen', shortName: 'Herz', category: 'POTS', color: '#c2185b', enabled: true, builtin: true }
+      ];
+
+      function cloneDefaultSymptomDefs() {
+        return DEFAULT_SYMPTOMS.map((s) => ({ ...s }));
+      }
+
+      const state = {
+        injections: [],
+        referenceDate: null,
+        doseInputMode: 'mg',
+        unit: 'mg',
+        showTargetBand: true,
+        targetMin: 0,
+        targetMax: 5,
+        halfLife: 5.0,
+        tMax: 1.0,
+        defaultInterval: 7,
+        bioavailability: 0.8,
+        volumeDist: 10.3,
+        useFvVd: false,
+        ka: null,
+        ke: null,
+        symptomDefs: cloneDefaultSymptomDefs(),
+        symptomEntries: []
+      };
+
+      let chartInstance = null;
+      let symptomChartInstance = null;
+      let renderScheduled = false;
+      let lastSimData = null;
+      let linkedFileHandle = null;
+      let linkedFileName = null;
+      let fileSaveTimer = null;
+      let lastSavedAt = null;
+
+      const jsonFileTypes = [{
+        description: 'Tirzepatid Daten (JSON)',
+        accept: { 'application/json': ['.json'] }
+      }];
+
+      const els = {
+        injectionBody: document.getElementById('injectionBody'),
+        injectionHeadRow: document.getElementById('injectionHeadRow'),
+        tableEmpty: document.getElementById('tableEmpty'),
+        addInjectionBtn: document.getElementById('addInjectionBtn'),
+        addStep1Btn: document.getElementById('addStep1Btn'),
+        addStep2Btn: document.getElementById('addStep2Btn'),
+        addSameLevelBtn: document.getElementById('addSameLevelBtn'),
+        doseModeToggle: document.getElementById('doseModeToggle'),
+        precisionHint: document.getElementById('precisionHint'),
+        mgInjectionActions: document.getElementById('mgInjectionActions'),
+        precisionInjectionActions: document.getElementById('precisionInjectionActions'),
+        unitToggle: document.getElementById('unitToggle'),
+        showTargetBand: document.getElementById('showTargetBand'),
+        targetMin: document.getElementById('targetMin'),
+        targetMax: document.getElementById('targetMax'),
+        halfLife: document.getElementById('halfLife'),
+        tMax: document.getElementById('tMax'),
+        defaultInterval: document.getElementById('defaultInterval'),
+        bioavailability: document.getElementById('bioavailability'),
+        volumeDist: document.getElementById('volumeDist'),
+        useFvVd: document.getElementById('useFvVd'),
+        fvFields: document.getElementById('fvFields'),
+        unitNgml: document.getElementById('unitNgml'),
+        kaDisplay: document.getElementById('kaDisplay'),
+        chartPlaceholder: document.getElementById('chartPlaceholder'),
+        statPeak: document.getElementById('statPeak'),
+        statTrough: document.getElementById('statTrough'),
+        statAvg: document.getElementById('statAvg'),
+        statAccum: document.getElementById('statAccum'),
+        dataFileStatus: document.getElementById('dataFileStatus'),
+        dataFileStatusTitle: document.getElementById('dataFileStatusTitle'),
+        dataFileStatusDetail: document.getElementById('dataFileStatusDetail'),
+        exportDataBtn: document.getElementById('exportDataBtn'),
+        importDataBtn: document.getElementById('importDataBtn'),
+        importDataInput: document.getElementById('importDataInput'),
+        linkDataFileBtn: document.getElementById('linkDataFileBtn'),
+        createDataFileBtn: document.getElementById('createDataFileBtn'),
+        unlinkDataFileBtn: document.getElementById('unlinkDataFileBtn'),
+        symptomManager: document.getElementById('symptomManager'),
+        symptomHeadRow: document.getElementById('symptomHeadRow'),
+        symptomBody: document.getElementById('symptomBody'),
+        symptomTableEmpty: document.getElementById('symptomTableEmpty'),
+        addSymptomEntryBtn: document.getElementById('addSymptomEntryBtn'),
+        customSymptomInput: document.getElementById('customSymptomInput'),
+        addCustomSymptomBtn: document.getElementById('addCustomSymptomBtn'),
+        symptomChart: document.getElementById('symptomChart'),
+        symptomChartPlaceholder: document.getElementById('symptomChartPlaceholder')
+      };
+
+      function supportsFileSystemAccess() {
+        return 'showSaveFilePicker' in window && 'showOpenFilePicker' in window;
+      }
+
+      function getStatePayload() {
+        return {
+          version: 1,
+          savedAt: new Date().toISOString(),
+          injections: state.injections,
+          referenceDate: state.referenceDate,
+          doseInputMode: state.doseInputMode,
+          unit: state.unit,
+          showTargetBand: state.showTargetBand,
+          targetMin: state.targetMin,
+          targetMax: state.targetMax,
+          halfLife: state.halfLife,
+          tMax: state.tMax,
+          defaultInterval: state.defaultInterval,
+          bioavailability: state.bioavailability,
+          volumeDist: state.volumeDist,
+          useFvVd: state.useFvVd,
+          symptomDefs: state.symptomDefs,
+          symptomEntries: state.symptomEntries
+        };
+      }
+
+      function applyStatePayload(saved) {
+        if (!saved || typeof saved !== 'object') return;
+        if (saved.referenceDate && isValidISODate(saved.referenceDate)) {
+          state.referenceDate = saved.referenceDate;
+        }
+        if (Array.isArray(saved.injections)) {
+          state.injections = migrateInjections(saved.injections, state.referenceDate);
+        }
+        if (saved.doseInputMode === 'mg' || saved.doseInputMode === 'precision') {
+          state.doseInputMode = saved.doseInputMode;
+        }
+        if (saved.unit) state.unit = saved.unit;
+        if (typeof saved.showTargetBand === 'boolean') state.showTargetBand = saved.showTargetBand;
+        if (Number.isFinite(saved.targetMin)) state.targetMin = saved.targetMin;
+        if (Number.isFinite(saved.targetMax)) state.targetMax = saved.targetMax;
+        if (Number.isFinite(saved.halfLife)) state.halfLife = saved.halfLife;
+        if (Number.isFinite(saved.tMax)) state.tMax = saved.tMax;
+        if (Number.isFinite(saved.defaultInterval)) state.defaultInterval = saved.defaultInterval;
+        if (Number.isFinite(saved.bioavailability)) state.bioavailability = saved.bioavailability;
+        if (Number.isFinite(saved.volumeDist)) state.volumeDist = saved.volumeDist;
+        if (typeof saved.useFvVd === 'boolean') state.useFvVd = saved.useFvVd;
+        if (!state.useFvVd && state.unit === 'ngml') state.unit = 'mg';
+        state.symptomDefs = mergeSymptomDefs(saved.symptomDefs);
+        state.symptomEntries = migrateSymptomEntries(saved.symptomEntries);
+      }
+
+      function mergeSymptomDefs(saved) {
+        const deprecatedIds = LEGACY_SYMPTOM_DEF_IDS;
+        const map = new Map();
+        let customColorIdx = 0;
+        if (Array.isArray(saved)) {
+          saved.forEach((s) => {
+            if (!s || typeof s.id !== 'string' || typeof s.name !== 'string') return;
+            if (deprecatedIds.has(s.id)) return;
+            map.set(s.id, {
+              id: s.id,
+              name: s.name,
+              shortName: typeof s.shortName === 'string' ? s.shortName : s.name.slice(0, 6),
+              category: SYMPTOM_CATEGORIES.includes(s.category) ? s.category : 'Eigene',
+              color: typeof s.color === 'string'
+                ? s.color
+                : CUSTOM_SYMPTOM_PALETTE[customColorIdx++ % CUSTOM_SYMPTOM_PALETTE.length],
+              enabled: typeof s.enabled === 'boolean' ? s.enabled : true,
+              builtin: !!s.builtin
+            });
+          });
+        }
+        DEFAULT_SYMPTOMS.forEach((def) => {
+          if (!map.has(def.id)) {
+            map.set(def.id, { ...def });
+          } else {
+            const existing = map.get(def.id);
+            existing.name = def.name;
+            existing.shortName = def.shortName;
+            existing.category = def.category;
+            existing.color = def.color;
+            existing.builtin = true;
+          }
+        });
+        return Array.from(map.values());
+      }
+
+      function pickCustomSymptomColor() {
+        const used = new Set(state.symptomDefs.map((s) => s.color));
+        for (let i = 0; i < CUSTOM_SYMPTOM_PALETTE.length; i++) {
+          const c = CUSTOM_SYMPTOM_PALETTE[i];
+          if (!used.has(c)) return c;
+        }
+        return CUSTOM_SYMPTOM_PALETTE[state.symptomDefs.length % CUSTOM_SYMPTOM_PALETTE.length];
+      }
+
+      function migrateSymptomEntries(entries) {
+        if (!Array.isArray(entries)) return [];
+        return entries.map((e) => {
+          const values = {};
+          if (e.values && typeof e.values === 'object') {
+            Object.keys(e.values).forEach((k) => {
+              if (DROPPED_SYMPTOM_IDS.has(k)) return;
+              const targetId = SYMPTOM_ID_ALIASES[k] || k;
+              const v = Number(e.values[k]);
+              const clamped = Number.isFinite(v) ? Math.max(0, Math.min(10, Math.round(v))) : 0;
+              values[targetId] = Math.max(values[targetId] ?? 0, clamped);
+            });
+          }
+          return {
+            date: isValidISODate(e.date) ? e.date : todayISO(),
+            values,
+            note: typeof e.note === 'string' ? e.note : ''
+          };
+        }).sort((a, b) => a.date.localeCompare(b.date));
+      }
+
+      function getActiveSymptoms() {
+        return state.symptomDefs.filter((s) => s.enabled);
+      }
+
+      function getSymptomColor(sym) {
+        return sym.color || pickCustomSymptomColor();
+      }
+
+      function getSymptomShortName(sym) {
+        return sym.shortName || sym.name.slice(0, 6);
+      }
+
+      function clampSymptomValue(v) {
+        const n = Number(v);
+        if (!Number.isFinite(n)) return 0;
+        return Math.max(0, Math.min(10, Math.round(n)));
+      }
+
+      function refreshSymptomUI() {
+        renderSymptomManager();
+        renderSymptomTable();
+        renderSymptomChart();
+      }
+
+      function refreshUIFromState() {
+        applyStateToForm();
+        updateDoseModeUI();
+        updateUnitControls();
+        renderInjectionTable();
+        updateKaDisplay();
+        refreshSymptomUI();
+        scheduleRender();
+      }
+
+      function todayISO() {
+        const now = new Date();
+        return toISODate(new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())));
+      }
+
+      function parseISODate(str) {
+        if (!str || typeof str !== 'string') return null;
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str);
+        if (!m) return null;
+        const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+        if (isNaN(d.getTime())) return null;
+        return d;
+      }
+
+      function toISODate(date) {
+        const y = date.getUTCFullYear();
+        const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(date.getUTCDate()).padStart(2, '0');
+        return y + '-' + m + '-' + d;
+      }
+
+      function isValidISODate(str) {
+        return parseISODate(str) !== null;
+      }
+
+      function daysBetween(isoA, isoB) {
+        const a = parseISODate(isoA);
+        const b = parseISODate(isoB);
+        if (!a || !b) return 0;
+        return Math.round((b - a) / 86400000);
+      }
+
+      function addDays(iso, n) {
+        const d = parseISODate(iso);
+        if (!d) return iso;
+        d.setUTCDate(d.getUTCDate() + n);
+        return toISODate(d);
+      }
+
+      function formatDateDE(iso) {
+        const d = parseISODate(iso);
+        if (!d) return iso;
+        return d.toLocaleDateString('de-DE', { timeZone: 'UTC' });
+      }
+
+      function clampLevel(level) {
+        if (!Number.isFinite(level)) return 0;
+        return Math.max(0, Math.min(MAX_LEVEL, level));
+      }
+
+      function levelToDose(level) {
+        return (clampLevel(level) / MAX_LEVEL) * MAX_DOSE_MG;
+      }
+
+      function doseToLevel(dose) {
+        if (!Number.isFinite(dose) || dose <= 0) return 0;
+        return clampLevel((dose / MAX_DOSE_MG) * MAX_LEVEL);
+      }
+
+      function formatLevel(level) {
+        if (!Number.isFinite(level)) return '0';
+        const rounded = Math.round(level * 100) / 100;
+        return String(rounded);
+      }
+
+      function formatDoseMg(dose) {
+        if (!Number.isFinite(dose)) return '0,00 mg';
+        return dose.toFixed(2).replace('.', ',') + ' mg';
+      }
+
+      function appendDoseCell(tr, inj, index) {
+        const tdDose = document.createElement('td');
+        const doseSpan = document.createElement('span');
+        doseSpan.className = 'computed-dose';
+        doseSpan.dataset.index = index;
+        doseSpan.title = 'Berechnet aus Klicks und Pen-Dosis';
+        doseSpan.textContent = formatDoseMg(
+          Number.isFinite(inj.dose) ? inj.dose : levelToDose(inj.level)
+        );
+        tdDose.appendChild(doseSpan);
+        tr.appendChild(tdDose);
+      }
+
+      function doseToClicks(dose, penMg) {
+        if (!Number.isFinite(dose) || dose <= 0 || !Number.isFinite(penMg) || penMg <= 0) return 0;
+        return Math.round((dose / penMg) * CLICKS_FULL);
+      }
+
+      function clicksToDose(clicks, penMg) {
+        if (!Number.isFinite(clicks) || clicks < 0 || !Number.isFinite(penMg) || penMg <= 0) return 0;
+        return Math.round((clicks / CLICKS_FULL) * penMg * 1000) / 1000;
+      }
+
+      function getPenMg(inj) {
+        return Number.isFinite(inj.penMg) && inj.penMg > 0 ? inj.penMg : DEFAULT_PEN_MG;
+      }
+
+      function getLastPenMg() {
+        const schedule = buildInjectionSchedule(state.injections).schedule;
+        if (schedule.length === 0) return DEFAULT_PEN_MG;
+        const last = state.injections[schedule[schedule.length - 1].originalIndex];
+        return getPenMg(last);
+      }
+
+      function appendPenCell(tr, inj, index) {
+        const tdPen = document.createElement('td');
+        const inputPen = document.createElement('input');
+        inputPen.type = 'number';
+        inputPen.className = 'pen-mg-input';
+        inputPen.step = '0.5';
+        inputPen.min = '0.5';
+        inputPen.max = '15';
+        inputPen.value = getPenMg(inj);
+        inputPen.title = 'Volle Pen-Dosis in mg (= 60 Klicks)';
+        inputPen.dataset.index = index;
+        inputPen.dataset.field = 'penMg';
+        inputPen.addEventListener('input', onInjectionInput);
+        tdPen.appendChild(inputPen);
+        tr.appendChild(tdPen);
+      }
+
+      function appendClicksCell(tr, inj, index) {
+        const tdClicks = document.createElement('td');
+        const inputClicks = document.createElement('input');
+        inputClicks.type = 'number';
+        inputClicks.className = 'clicks-input';
+        inputClicks.step = '1';
+        inputClicks.min = '0';
+        inputClicks.title = 'Klicks am Pen — Dosis = Klicks ÷ 60 × Pen-Dosis';
+        inputClicks.dataset.index = index;
+        inputClicks.dataset.field = 'clicks';
+        const dose = Number.isFinite(inj.dose) ? inj.dose : 0;
+        inputClicks.value = doseToClicks(dose, getPenMg(inj));
+        inputClicks.addEventListener('input', onInjectionInput);
+        tdClicks.appendChild(inputClicks);
+        tr.appendChild(tdClicks);
+      }
+
+      function updateClicksLabels() {
+        els.injectionBody.querySelectorAll('input[data-field="clicks"]').forEach((el) => {
+          const idx = parseInt(el.dataset.index, 10);
+          const inj = state.injections[idx];
+          if (!inj) return;
+          const dose = Number.isFinite(inj.dose) ? inj.dose : 0;
+          el.value = doseToClicks(dose, getPenMg(inj));
+        });
+      }
+
+      function updateDoseLabels() {
+        els.injectionBody.querySelectorAll('.computed-dose').forEach((el) => {
+          const idx = parseInt(el.dataset.index, 10);
+          const inj = state.injections[idx];
+          if (inj) el.textContent = formatDoseMg(inj.dose);
+        });
+        updateClicksLabels();
+      }
+
+      function updateLevelInputs() {
+        els.injectionBody.querySelectorAll('input[data-field="level"]').forEach((el) => {
+          const idx = parseInt(el.dataset.index, 10);
+          const inj = state.injections[idx];
+          if (inj) el.value = formatLevel(inj.level);
+        });
+      }
+
+      function syncLevelFromDose(inj) {
+        if (!Number.isFinite(inj.dose)) inj.dose = 0;
+        inj.level = doseToLevel(inj.dose);
+      }
+
+      function syncDoseFromLevel(inj) {
+        if (!Number.isFinite(inj.level)) inj.level = doseToLevel(inj.dose);
+        inj.level = clampLevel(inj.level);
+        inj.dose = levelToDose(inj.level);
+      }
+
+      function getLastInjectionLevel() {
+        const schedule = buildInjectionSchedule(state.injections).schedule;
+        if (schedule.length === 0) return null;
+        const last = state.injections[schedule[schedule.length - 1].originalIndex];
+        return Number.isFinite(last.level) ? last.level : doseToLevel(last.dose);
+      }
+
+      function computeNextInjectionDate() {
+        let nextDate = todayISO();
+        const schedule = buildInjectionSchedule(state.injections).schedule;
+        if (schedule.length > 0) {
+          const last = schedule[schedule.length - 1];
+          const interval = Number.isFinite(state.defaultInterval) ? state.defaultInterval : 7;
+          nextDate = addDays(last.date, interval);
+        }
+        return nextDate;
+      }
+
+      function buildInjectionSchedule(raw) {
+        const withIndex = raw.map((inj, originalIndex) => ({ ...inj, originalIndex }));
+        const valid = withIndex
+          .filter((inj) => isValidISODate(inj.date) && Number.isFinite(inj.dose) && inj.dose > 0)
+          .sort((a, b) => a.date.localeCompare(b.date));
+
+        const doseEntries = withIndex.filter((inj) => Number.isFinite(inj.dose) && inj.dose > 0);
+        const useCalendarAxis = doseEntries.length > 0 &&
+          doseEntries.every((inj) => isValidISODate(inj.date));
+
+        if (valid.length === 0) {
+          return { schedule: [], useCalendarAxis: false, anchorDate: null };
+        }
+
+        const anchorDate = valid[0].date;
+        const schedule = valid.map((inj, i) => ({
+          date: inj.date,
+          dose: inj.dose,
+          day: daysBetween(anchorDate, inj.date),
+          gap: i === 0 ? null : daysBetween(valid[i - 1].date, inj.date),
+          originalIndex: inj.originalIndex
+        }));
+
+        return { schedule, useCalendarAxis, anchorDate };
+      }
+
+      function getGapByIndex() {
+        const map = new Map();
+        buildInjectionSchedule(state.injections).schedule.forEach((s) => {
+          map.set(s.originalIndex, s.gap);
+        });
+        return map;
+      }
+
+      function updateGapLabels() {
+        const gapByIndex = getGapByIndex();
+        els.injectionBody.querySelectorAll('.gap-label').forEach((el) => {
+          const idx = parseInt(el.dataset.index, 10);
+          const gap = gapByIndex.get(idx);
+          el.textContent = gap == null ? '—' : gap + ' Tage';
+        });
+      }
+
+      function calcKe(halfLife) {
+        return Math.LN2 / halfLife;
+      }
+
+      function calcTmaxFromKa(ka, ke) {
+        return Math.log(ka / ke) / (ka - ke);
+      }
+
+      function solveKa(tMaxTarget, ke) {
+        if (!Number.isFinite(tMaxTarget) || tMaxTarget <= 0 || !Number.isFinite(ke) || ke <= 0) {
+          return null;
+        }
+
+        let lo = ke * 1.001;
+        let hi = 1000;
+        const tAtLo = calcTmaxFromKa(lo, ke);
+        const tAtHi = calcTmaxFromKa(hi, ke);
+
+        if (tMaxTarget >= tAtLo) return lo;
+        if (tMaxTarget <= tAtHi) return hi;
+
+        for (let i = 0; i < 50; i++) {
+          const mid = (lo + hi) / 2;
+          const tMid = calcTmaxFromKa(mid, ke);
+          if (tMid > tMaxTarget) lo = mid;
+          else hi = mid;
+        }
+        return (lo + hi) / 2;
+      }
+
+      function batemanShape(t, ka, ke) {
+        if (t < 0) return 0;
+        if (t === 0) return 0;
+
+        const diff = ka - ke;
+        if (Math.abs(diff) < 1e-9) {
+          const k = ke;
+          return k * t * Math.exp(-k * t);
+        }
+
+        return (ka / diff) * (Math.exp(-ke * t) - Math.exp(-ka * t));
+      }
+
+      function singleDosePeakMg(dose, ka, ke) {
+        let peak = 0;
+        const searchEnd = Math.max(state.tMax * 4, 10);
+        for (let t = 0; t <= searchEnd; t += TIME_STEP) {
+          const val = dose * batemanShape(t, ka, ke);
+          if (val > peak) peak = val;
+        }
+        return peak;
+      }
+
+      function getUnitFactor() {
+        if (state.unit === 'mg') return 1;
+        if (!state.useFvVd) return 1;
+        return (1000 * state.bioavailability) / state.volumeDist;
+      }
+
+      function getYAxisLabel() {
+        if (state.unit === 'mg') {
+          return state.useFvVd ? 'Modell-mg' : 'Modell-mg (ohne F/Vd)';
+        }
+        return 'ng/mL (modelliert, F/Vd)';
+      }
+
+      function getUnitLabel() {
+        return state.unit === 'mg' ? 'mg' : 'ng/mL';
+      }
+
+      function formatValue(value) {
+        if (!Number.isFinite(value)) return '—';
+        if (state.unit === 'mg') {
+          return value < 10 ? value.toFixed(2) : value.toFixed(1);
+        }
+        return value < 100 ? value.toFixed(1) : Math.round(value).toLocaleString('de-DE');
+      }
+
+      function sortedInjections() {
+        return buildInjectionSchedule(state.injections).schedule;
+      }
+
+      function dayToChartIndex(day, labels) {
+        for (let i = 0; i < labels.length; i++) {
+          if (Math.abs(labels[i] - day) < 1e-6) return i;
+        }
+        return Math.round(day / TIME_STEP);
+      }
+
+      function simulate() {
+        state.ke = calcKe(state.halfLife);
+        state.ka = solveKa(state.tMax, state.ke);
+
+        const { schedule: injections, useCalendarAxis, anchorDate } = buildInjectionSchedule(state.injections);
+        if (injections.length === 0 || !state.ka) {
+          return null;
+        }
+
+        const maxDay = Math.max(...injections.map((i) => i.day));
+        const endDay = maxDay + TAIL_DAYS;
+        const labels = [];
+        const dateLabels = [];
+        const valuesMg = [];
+
+        for (let t = 0; t <= endDay + 1e-9; t += TIME_STEP) {
+          let total = 0;
+          for (const inj of injections) {
+            if (t >= inj.day) {
+              total += inj.dose * batemanShape(t - inj.day, state.ka, state.ke);
+            }
+          }
+          labels.push(Number(t.toFixed(2)));
+          if (useCalendarAxis && anchorDate) {
+            dateLabels.push(formatDateDE(addDays(anchorDate, t)));
+          }
+          valuesMg.push(total);
+        }
+
+        const factor = getUnitFactor();
+        const values = valuesMg.map((v) => v * factor);
+
+        const lastWeekStart = Math.max(0, endDay - 7);
+        const weekIndices = [];
+        for (let i = 0; i < labels.length; i++) {
+          if (labels[i] >= lastWeekStart) weekIndices.push(i);
+        }
+
+        let peak = -Infinity;
+        let trough = Infinity;
+        let sum = 0;
+        for (const idx of weekIndices) {
+          const v = values[idx];
+          if (v > peak) peak = v;
+          if (v < trough) trough = v;
+          sum += v;
+        }
+        const avg = weekIndices.length ? sum / weekIndices.length : NaN;
+
+        const lastInj = injections[injections.length - 1];
+        const singlePeakMg = singleDosePeakMg(lastInj.dose, state.ka, state.ke);
+        const singlePeakDisplay = singlePeakMg * factor;
+        const accum = singlePeakDisplay > 0 ? peak / singlePeakDisplay : NaN;
+
+        return {
+          labels,
+          dateLabels,
+          useCalendarAxis,
+          anchorDate,
+          values,
+          valuesMg,
+          injections,
+          endDay,
+          stats: { peak, trough, avg, accum },
+          injectionDays: injections.map((i) => i.day)
+        };
+      }
+
+      const overlayPlugin = {
+        id: 'pkOverlays',
+        beforeDatasetsDraw(chart) {
+          if (!lastSimData) return;
+
+          const { ctx, chartArea, scales } = chart;
+          if (!chartArea) return;
+
+          const xScale = scales.x;
+          const yScale = scales.y;
+
+          if (state.showTargetBand && Number.isFinite(state.targetMin) && Number.isFinite(state.targetMax)) {
+            const yTop = Math.max(state.targetMin, state.targetMax);
+            const yBottom = Math.min(state.targetMin, state.targetMax);
+            const topPx = yScale.getPixelForValue(yTop);
+            const bottomPx = yScale.getPixelForValue(yBottom);
+
+            ctx.save();
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--target-band').trim() || 'rgba(30,125,74,0.12)';
+            ctx.fillRect(chartArea.left, topPx, chartArea.right - chartArea.left, bottomPx - topPx);
+            ctx.restore();
+          }
+
+          ctx.save();
+          ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--inj-marker').trim() || 'rgba(192,57,43,0.35)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 4]);
+
+          for (const day of lastSimData.injectionDays) {
+            const idx = dayToChartIndex(day, lastSimData.labels);
+            const x = xScale.getPixelForValue(idx);
+            if (x >= chartArea.left && x <= chartArea.right) {
+              ctx.beginPath();
+              ctx.moveTo(x, chartArea.top);
+              ctx.lineTo(x, chartArea.bottom);
+              ctx.stroke();
+            }
+          }
+          ctx.restore();
+        }
+      };
+
+      function destroyChart() {
+        if (chartInstance) {
+          chartInstance.destroy();
+          chartInstance = null;
+        }
+      }
+
+      function renderChart(data) {
+        const canvas = document.getElementById('pkChart');
+        const unitLabel = getUnitLabel();
+
+        if (!data) {
+          destroyChart();
+          els.chartPlaceholder.classList.remove('hidden');
+          els.statPeak.textContent = '—';
+          els.statTrough.textContent = '—';
+          els.statAvg.textContent = '—';
+          els.statAccum.textContent = '—';
+          return;
+        }
+
+        els.chartPlaceholder.classList.add('hidden');
+        lastSimData = data;
+
+        destroyChart();
+
+        const chartData = data;
+        chartInstance = new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels: data.labels,
+            datasets: [{
+              label: 'Gesamtspiegel (' + unitLabel + ')',
+              data: data.values,
+              borderColor: getComputedStyle(document.documentElement).getPropertyValue('--chart-line').trim() || '#0d6e8a',
+              backgroundColor: 'rgba(13, 110, 138, 0.08)',
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.25,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { display: true, position: 'top' },
+              tooltip: {
+                callbacks: {
+                  title(items) {
+                    const idx = items[0].dataIndex;
+                    const day = chartData.labels[idx];
+                    if (chartData.useCalendarAxis && chartData.anchorDate) {
+                      const dateStr = formatDateDE(addDays(chartData.anchorDate, day));
+                      return dateStr + ' (Tag ' + Math.round(day) + ')';
+                    }
+                    return 'Tag ' + day;
+                  },
+                  label(ctx) {
+                    return ctx.dataset.label + ': ' + formatValue(ctx.parsed.y) + ' ' + unitLabel;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                title: { display: true, text: data.useCalendarAxis ? 'Datum' : 'Tage ab Start' },
+                ticks: {
+                  maxTicksLimit: 14,
+                  callback(value) {
+                    const day = this.getLabelForValue(value);
+                    if (day === undefined || day === '') return '';
+                    if (chartData.useCalendarAxis && chartData.anchorDate) {
+                      return Number(day) % 1 === 0 ? formatDateDE(addDays(chartData.anchorDate, day)) : '';
+                    }
+                    return Number(day) % 1 === 0 ? day : '';
+                  }
+                }
+              },
+              y: {
+                title: { display: true, text: getYAxisLabel() },
+                beginAtZero: true
+              }
+            }
+          },
+          plugins: [overlayPlugin]
+        });
+
+        const u = unitLabel;
+        els.statPeak.innerHTML = formatValue(data.stats.peak) + ' <span class="unit">' + u + '</span>';
+        els.statTrough.innerHTML = formatValue(data.stats.trough) + ' <span class="unit">' + u + '</span>';
+        els.statAvg.innerHTML = formatValue(data.stats.avg) + ' <span class="unit">' + u + '</span>';
+        els.statAccum.innerHTML = Number.isFinite(data.stats.accum)
+          ? data.stats.accum.toFixed(2) + '×'
+          : '—';
+      }
+
+      function updateKaDisplay() {
+        state.ke = calcKe(state.halfLife);
+        state.ka = solveKa(state.tMax, state.ke);
+        if (state.ka) {
+          const verified = calcTmaxFromKa(state.ka, state.ke);
+          els.kaDisplay.textContent =
+            'kₐ ≈ ' + state.ka.toFixed(3) + ' /Tag · kₑ ≈ ' + state.ke.toFixed(4) +
+            ' /Tag · Tmax-Verifikation: ' + verified.toFixed(2) + ' Tage';
+        } else {
+          els.kaDisplay.textContent = 'kₐ: ungültige Parameter';
+        }
+      }
+
+      function readFormState() {
+        const activeDoseMode = document.querySelector('#doseModeToggle button.active');
+        if (activeDoseMode) state.doseInputMode = activeDoseMode.dataset.mode;
+        state.unit = document.querySelector('#unitToggle button.active').dataset.unit;
+        state.showTargetBand = els.showTargetBand.checked;
+        state.targetMin = parseFloat(els.targetMin.value);
+        state.targetMax = parseFloat(els.targetMax.value);
+        state.halfLife = parseFloat(els.halfLife.value);
+        state.tMax = parseFloat(els.tMax.value);
+        state.defaultInterval = parseFloat(els.defaultInterval.value);
+        state.useFvVd = els.useFvVd.checked;
+        state.bioavailability = parseFloat(els.bioavailability.value);
+        state.volumeDist = parseFloat(els.volumeDist.value);
+      }
+
+      function updateUnitControls() {
+        if (!state.useFvVd) {
+          if (state.unit === 'ngml') {
+            state.unit = 'mg';
+            document.querySelectorAll('#unitToggle button').forEach((btn) => {
+              btn.classList.toggle('active', btn.dataset.unit === 'mg');
+            });
+          }
+          els.unitNgml.disabled = true;
+          els.unitNgml.title = 'Aktiviere „F und Vd einbeziehen“ im Erweitert-Bereich';
+          els.fvFields.classList.add('field-group-disabled');
+          els.bioavailability.disabled = true;
+          els.volumeDist.disabled = true;
+        } else {
+          els.unitNgml.disabled = false;
+          els.unitNgml.title = '';
+          els.fvFields.classList.remove('field-group-disabled');
+          els.bioavailability.disabled = false;
+          els.volumeDist.disabled = false;
+        }
+      }
+
+      function updateDoseModeUI() {
+        const precision = state.doseInputMode === 'precision';
+        document.querySelectorAll('#doseModeToggle button').forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.mode === state.doseInputMode);
+        });
+        els.precisionHint.classList.toggle('hidden', !precision);
+        els.mgInjectionActions.classList.toggle('hidden', precision);
+        els.precisionInjectionActions.classList.toggle('hidden', !precision);
+        if (precision) {
+          els.injectionHeadRow.innerHTML =
+            '<th>Datum</th><th>Abstand</th><th>Pen</th><th>Level</th><th>mg</th><th>Klicks</th><th></th>';
+        } else {
+          els.injectionHeadRow.innerHTML =
+            '<th>Datum</th><th>Abstand</th><th>Pen</th><th>Dosis</th><th>Klicks</th><th></th>';
+        }
+      }
+
+      function onDoseModeSwitch(mode) {
+        if (mode !== 'mg' && mode !== 'precision') return;
+        state.doseInputMode = mode;
+        state.injections.forEach((inj) => {
+          if (Number.isFinite(inj.dose) && inj.dose > 0) {
+            syncLevelFromDose(inj);
+          } else if (Number.isFinite(inj.level) && inj.level > 0) {
+            syncDoseFromLevel(inj);
+          }
+        });
+        updateDoseModeUI();
+        renderInjectionTable();
+        scheduleRender();
+      }
+
+      function scheduleRender() {
+        if (renderScheduled) return;
+        renderScheduled = true;
+        requestAnimationFrame(() => {
+          renderScheduled = false;
+          readFormState();
+          updateUnitControls();
+          updateKaDisplay();
+          saveState();
+          updateGapLabels();
+          const data = simulate();
+          renderChart(data);
+        });
+      }
+
+      function renderInjectionTable() {
+        els.injectionBody.innerHTML = '';
+        const hasRows = state.injections.length > 0;
+        els.tableEmpty.style.display = hasRows ? 'none' : 'block';
+        const gapByIndex = getGapByIndex();
+        const precision = state.doseInputMode === 'precision';
+
+        state.injections.forEach((inj, index) => {
+          const tr = document.createElement('tr');
+
+          const tdDate = document.createElement('td');
+          const inputDate = document.createElement('input');
+          inputDate.type = 'date';
+          inputDate.value = inj.date || '';
+          inputDate.dataset.index = index;
+          inputDate.dataset.field = 'date';
+          inputDate.addEventListener('input', onInjectionInput);
+          inputDate.addEventListener('change', onInjectionInput);
+          tdDate.appendChild(inputDate);
+
+          const tdGap = document.createElement('td');
+          const gapSpan = document.createElement('span');
+          gapSpan.className = 'gap-label';
+          gapSpan.dataset.index = index;
+          const gap = gapByIndex.get(index);
+          gapSpan.textContent = gap == null ? '—' : gap + ' Tage';
+          tdGap.appendChild(gapSpan);
+
+          const tdAction = document.createElement('td');
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'btn btn-danger btn-sm';
+          delBtn.textContent = '✕';
+          delBtn.title = 'Löschen';
+          delBtn.dataset.index = index;
+          delBtn.addEventListener('click', onDeleteInjection);
+          tdAction.appendChild(delBtn);
+
+          tr.appendChild(tdDate);
+          tr.appendChild(tdGap);
+          appendPenCell(tr, inj, index);
+
+          if (precision) {
+            const tdLevel = document.createElement('td');
+            const inputLevel = document.createElement('input');
+            inputLevel.type = 'number';
+            inputLevel.className = 'level-input';
+            inputLevel.step = '0.1';
+            inputLevel.min = '0';
+            inputLevel.max = String(MAX_LEVEL);
+            inputLevel.value = formatLevel(
+              Number.isFinite(inj.level) ? inj.level : doseToLevel(inj.dose)
+            );
+            inputLevel.dataset.index = index;
+            inputLevel.dataset.field = 'level';
+            inputLevel.addEventListener('input', onInjectionInput);
+            tdLevel.appendChild(inputLevel);
+
+            tr.appendChild(tdLevel);
+            appendDoseCell(tr, inj, index);
+          } else {
+            appendDoseCell(tr, inj, index);
+          }
+
+          appendClicksCell(tr, inj, index);
+          tr.appendChild(tdAction);
+          els.injectionBody.appendChild(tr);
+        });
+      }
+
+      function onInjectionInput(e) {
+        const index = parseInt(e.target.dataset.index, 10);
+        const field = e.target.dataset.field;
+        if (!state.injections[index]) return;
+        if (field === 'date') {
+          state.injections[index][field] = e.target.value;
+        } else if (field === 'level') {
+          const value = parseFloat(e.target.value);
+          state.injections[index].level = clampLevel(Number.isFinite(value) ? value : 0);
+          state.injections[index].dose = levelToDose(state.injections[index].level);
+          updateDoseLabels();
+        } else if (field === 'clicks') {
+          const value = parseInt(e.target.value, 10);
+          const clicks = Number.isFinite(value) && value >= 0 ? value : 0;
+          const penMg = getPenMg(state.injections[index]);
+          state.injections[index].dose = clicksToDose(clicks, penMg);
+          state.injections[index].level = doseToLevel(state.injections[index].dose);
+          updateLevelInputs();
+          updateDoseLabels();
+        } else if (field === 'penMg') {
+          const value = parseFloat(e.target.value);
+          state.injections[index].penMg = Number.isFinite(value) && value > 0 ? value : DEFAULT_PEN_MG;
+          updateClicksLabels();
+        }
+        scheduleRender();
+      }
+
+      function onDeleteInjection(e) {
+        const index = parseInt(e.target.dataset.index, 10);
+        state.injections.splice(index, 1);
+        renderInjectionTable();
+        scheduleRender();
+      }
+
+      function addInjectionWithLevel(level) {
+        const clamped = clampLevel(level);
+        state.injections.push({
+          date: computeNextInjectionDate(),
+          level: clamped,
+          dose: levelToDose(clamped),
+          penMg: getLastPenMg()
+        });
+        renderInjectionTable();
+        scheduleRender();
+      }
+
+      function addInjectionSteps(stepCount) {
+        const lastLevel = getLastInjectionLevel();
+        const base = lastLevel == null ? DEFAULT_START_LEVEL : lastLevel;
+        addInjectionWithLevel(base + stepCount);
+      }
+
+      function addInjectionSameLevel() {
+        const lastLevel = getLastInjectionLevel();
+        addInjectionWithLevel(lastLevel == null ? DEFAULT_START_LEVEL : lastLevel);
+      }
+
+      function addInjection() {
+        if (state.doseInputMode === 'precision') {
+          addInjectionSameLevel();
+          return;
+        }
+        state.injections.push({
+          date: computeNextInjectionDate(),
+          dose: 2.5,
+          level: doseToLevel(2.5),
+          penMg: getLastPenMg()
+        });
+        renderInjectionTable();
+        scheduleRender();
+      }
+
+      function destroySymptomChart() {
+        if (symptomChartInstance) {
+          symptomChartInstance.destroy();
+          symptomChartInstance = null;
+        }
+      }
+
+      function renderSymptomManager() {
+        els.symptomManager.innerHTML = '';
+        const byCategory = new Map();
+        state.symptomDefs.forEach((sym) => {
+          const cat = sym.category || 'Eigene';
+          if (!byCategory.has(cat)) byCategory.set(cat, []);
+          byCategory.get(cat).push(sym);
+        });
+        const order = [...SYMPTOM_CATEGORIES];
+        byCategory.forEach((_, cat) => {
+          if (!order.includes(cat)) order.push(cat);
+        });
+        order.forEach((cat) => {
+          const items = byCategory.get(cat);
+          if (!items || items.length === 0) return;
+          const group = document.createElement('div');
+          group.className = 'symptom-manager-group';
+          const heading = document.createElement('h4');
+          heading.textContent = cat;
+          group.appendChild(heading);
+          items.forEach((sym) => {
+            const row = document.createElement('div');
+            row.className = 'symptom-manager-item';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.id = 'symdef-' + sym.id;
+            cb.checked = sym.enabled;
+            cb.dataset.id = sym.id;
+            cb.addEventListener('change', () => toggleSymptomDef(sym.id, cb.checked));
+            const label = document.createElement('label');
+            label.htmlFor = cb.id;
+            const dot = document.createElement('span');
+            dot.className = 'symptom-header-dot';
+            dot.style.backgroundColor = getSymptomColor(sym);
+            label.appendChild(dot);
+            label.appendChild(document.createTextNode(' ' + sym.name));
+            row.appendChild(cb);
+            row.appendChild(label);
+            if (!sym.builtin) {
+              const rm = document.createElement('button');
+              rm.type = 'button';
+              rm.className = 'btn btn-danger btn-sm';
+              rm.textContent = '✕';
+              rm.title = 'Symptom entfernen';
+              rm.dataset.id = sym.id;
+              rm.addEventListener('click', () => removeCustomSymptom(sym.id));
+              row.appendChild(rm);
+            }
+            group.appendChild(row);
+          });
+          els.symptomManager.appendChild(group);
+        });
+      }
+
+      function renderSymptomTableHead() {
+        const active = getActiveSymptoms();
+        let html = '<th>Datum</th>';
+        active.forEach((sym) => {
+          const color = getSymptomColor(sym);
+          const short = getSymptomShortName(sym);
+          html += '<th class="symptom-col" title="' + sym.name + ' (0–10)">' +
+            '<span class="symptom-header-inner">' +
+            '<span class="symptom-header-dot" style="background:' + color + '"></span>' +
+            '<span>' + short + '</span></span></th>';
+        });
+        html += '<th>Notiz</th><th></th>';
+        els.symptomHeadRow.innerHTML = html;
+      }
+
+      function renderSymptomTable() {
+        renderSymptomTableHead();
+        els.symptomBody.innerHTML = '';
+        const active = getActiveSymptoms();
+        const hasRows = state.symptomEntries.length > 0;
+        els.symptomTableEmpty.style.display = hasRows ? 'none' : 'block';
+
+        state.symptomEntries.forEach((entry, index) => {
+          const tr = document.createElement('tr');
+
+          const tdDate = document.createElement('td');
+          const inputDate = document.createElement('input');
+          inputDate.type = 'date';
+          inputDate.value = entry.date || '';
+          inputDate.dataset.index = index;
+          inputDate.dataset.field = 'date';
+          inputDate.addEventListener('input', onSymptomInput);
+          inputDate.addEventListener('change', onSymptomInput);
+          tdDate.appendChild(inputDate);
+          tr.appendChild(tdDate);
+
+          active.forEach((sym) => {
+            const td = document.createElement('td');
+            td.className = 'symptom-value-cell';
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.className = 'symptom-value-input';
+            input.min = '0';
+            input.max = '10';
+            input.step = '1';
+            input.value = clampSymptomValue(entry.values[sym.id] ?? 0);
+            input.dataset.index = index;
+            input.dataset.field = 'value';
+            input.dataset.symptomId = sym.id;
+            input.title = sym.name + ' (0–10)';
+            input.addEventListener('input', onSymptomInput);
+            td.appendChild(input);
+            tr.appendChild(td);
+          });
+
+          const tdNote = document.createElement('td');
+          const inputNote = document.createElement('input');
+          inputNote.type = 'text';
+          inputNote.className = 'symptom-note-input';
+          inputNote.value = entry.note || '';
+          inputNote.placeholder = 'Notiz…';
+          inputNote.dataset.index = index;
+          inputNote.dataset.field = 'note';
+          inputNote.addEventListener('input', onSymptomInput);
+          tdNote.appendChild(inputNote);
+          tr.appendChild(tdNote);
+
+          const tdAction = document.createElement('td');
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'btn btn-danger btn-sm';
+          delBtn.textContent = '✕';
+          delBtn.title = 'Eintrag löschen';
+          delBtn.dataset.index = index;
+          delBtn.addEventListener('click', deleteSymptomEntry);
+          tdAction.appendChild(delBtn);
+          tr.appendChild(tdAction);
+
+          els.symptomBody.appendChild(tr);
+        });
+      }
+
+      function renderSymptomChart() {
+        const active = getActiveSymptoms();
+        const entries = [...state.symptomEntries].sort((a, b) => a.date.localeCompare(b.date));
+
+        if (entries.length === 0 || active.length === 0) {
+          destroySymptomChart();
+          els.symptomChartPlaceholder.classList.remove('hidden');
+          return;
+        }
+
+        els.symptomChartPlaceholder.classList.add('hidden');
+        const labels = entries.map((e) => formatDateDE(e.date));
+        const datasets = active.map((sym) => {
+          const color = getSymptomColor(sym);
+          return {
+            label: sym.name,
+            data: entries.map((e) => {
+              const v = e.values[sym.id];
+              return Number.isFinite(v) ? v : null;
+            }),
+            borderColor: color,
+            backgroundColor: color + '33',
+            borderWidth: 2,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            tension: 0.2,
+            spanGaps: true
+          };
+        });
+
+        destroySymptomChart();
+        symptomChartInstance = new Chart(els.symptomChart, {
+          type: 'line',
+          data: { labels, datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { display: true, position: 'top' },
+              tooltip: {
+                callbacks: {
+                  label(ctx) {
+                    const v = ctx.parsed.y;
+                    return ctx.dataset.label + ': ' + (v == null ? '—' : v + '/10');
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                title: { display: true, text: 'Datum' },
+                ticks: { maxTicksLimit: 14 }
+              },
+              y: {
+                min: 0,
+                max: 10,
+                title: { display: true, text: 'Schweregrad (0–10)' },
+                ticks: { stepSize: 1 }
+              }
+            }
+          }
+        });
+      }
+
+      function onSymptomInput(e) {
+        const index = parseInt(e.target.dataset.index, 10);
+        const field = e.target.dataset.field;
+        const entry = state.symptomEntries[index];
+        if (!entry) return;
+
+        if (field === 'date') {
+          entry.date = e.target.value;
+        } else if (field === 'value') {
+          const symId = e.target.dataset.symptomId;
+          if (!entry.values) entry.values = {};
+          entry.values[symId] = clampSymptomValue(e.target.value);
+        } else if (field === 'note') {
+          entry.note = e.target.value;
+        }
+
+        state.symptomEntries.sort((a, b) => a.date.localeCompare(b.date));
+        saveState();
+        renderSymptomTable();
+        renderSymptomChart();
+      }
+
+      function deleteSymptomEntry(e) {
+        const index = parseInt(e.target.dataset.index, 10);
+        state.symptomEntries.splice(index, 1);
+        saveState();
+        refreshSymptomUI();
+      }
+
+      function addSymptomEntry() {
+        const values = {};
+        getActiveSymptoms().forEach((sym) => {
+          values[sym.id] = 0;
+        });
+        state.symptomEntries.push({
+          date: todayISO(),
+          values,
+          note: ''
+        });
+        state.symptomEntries.sort((a, b) => a.date.localeCompare(b.date));
+        saveState();
+        refreshSymptomUI();
+      }
+
+      function toggleSymptomDef(id, enabled) {
+        const sym = state.symptomDefs.find((s) => s.id === id);
+        if (!sym) return;
+        sym.enabled = enabled;
+        saveState();
+        refreshSymptomUI();
+      }
+
+      function addCustomSymptom() {
+        const name = (els.customSymptomInput.value || '').trim();
+        if (!name) return;
+        const id = 'custom-' + Date.now();
+        state.symptomDefs.push({
+          id,
+          name,
+          shortName: name.length > 8 ? name.slice(0, 7) + '.' : name,
+          category: 'Eigene',
+          color: pickCustomSymptomColor(),
+          enabled: true,
+          builtin: false
+        });
+        els.customSymptomInput.value = '';
+        saveState();
+        refreshSymptomUI();
+      }
+
+      function removeCustomSymptom(id) {
+        const sym = state.symptomDefs.find((s) => s.id === id);
+        if (!sym || sym.builtin) return;
+        state.symptomDefs = state.symptomDefs.filter((s) => s.id !== id);
+        state.symptomEntries.forEach((entry) => {
+          if (entry.values && entry.values[id] !== undefined) {
+            delete entry.values[id];
+          }
+        });
+        saveState();
+        refreshSymptomUI();
+      }
+
+      function saveState() {
+        const payload = getStatePayload();
+        lastSavedAt = payload.savedAt;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        } catch (err) {
+          console.warn('Speichern fehlgeschlagen:', err);
+        }
+        updateDataFileStatus();
+        scheduleFileSave();
+      }
+
+      function scheduleFileSave() {
+        if (!linkedFileHandle) return;
+        clearTimeout(fileSaveTimer);
+        fileSaveTimer = setTimeout(() => { writeLinkedFile(); }, 400);
+      }
+
+      async function writeLinkedFile() {
+        if (!linkedFileHandle) return;
+        try {
+          const writable = await linkedFileHandle.createWritable();
+          await writable.write(JSON.stringify(getStatePayload(), null, 2));
+          await writable.close();
+          lastSavedAt = getStatePayload().savedAt;
+          updateDataFileStatus();
+        } catch (err) {
+          console.warn('Datei-Speichern fehlgeschlagen:', err);
+          els.dataFileStatus.classList.remove('linked');
+          els.dataFileStatusTitle.textContent = 'Datei-Speichern fehlgeschlagen';
+          els.dataFileStatusDetail.textContent = 'Bitte erneut „Datei verknüpfen…" oder Export nutzen.';
+        }
+      }
+
+      function openHandleDB() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(FILE_HANDLE_DB, 1);
+          request.onupgradeneeded = () => {
+            request.result.createObjectStore(FILE_HANDLE_STORE);
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      async function persistFileHandle(handle) {
+        const db = await openHandleDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(FILE_HANDLE_STORE, 'readwrite');
+          tx.objectStore(FILE_HANDLE_STORE).put(handle, FILE_HANDLE_KEY);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      }
+
+      async function clearPersistedFileHandle() {
+        const db = await openHandleDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(FILE_HANDLE_STORE, 'readwrite');
+          tx.objectStore(FILE_HANDLE_STORE).delete(FILE_HANDLE_KEY);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      }
+
+      async function restoreFileHandle() {
+        if (!supportsFileSystemAccess()) return null;
+        try {
+          const db = await openHandleDB();
+          const handle = await new Promise((resolve, reject) => {
+            const tx = db.transaction(FILE_HANDLE_STORE, 'readonly');
+            const req = tx.objectStore(FILE_HANDLE_STORE).get(FILE_HANDLE_KEY);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => reject(req.error);
+          });
+          if (!handle) return null;
+          let perm = await handle.queryPermission({ mode: 'readwrite' });
+          if (perm !== 'granted') {
+            perm = await handle.requestPermission({ mode: 'readwrite' });
+          }
+          return perm === 'granted' ? handle : null;
+        } catch (err) {
+          console.warn('Datei-Handle konnte nicht wiederhergestellt werden:', err);
+          return null;
+        }
+      }
+
+      async function setLinkedFile(handle) {
+        linkedFileHandle = handle;
+        linkedFileName = handle.name;
+        await persistFileHandle(handle);
+        updateDataFileStatus();
+      }
+
+      function formatSavedAt(iso) {
+        if (!iso) return '';
+        try {
+          return new Date(iso).toLocaleString('de-DE');
+        } catch (e) {
+          return '';
+        }
+      }
+
+      function updateDataFileStatus() {
+        const savedLabel = lastSavedAt ? 'Zuletzt gespeichert: ' + formatSavedAt(lastSavedAt) : 'Noch nicht gespeichert in dieser Sitzung';
+
+        if (linkedFileHandle && linkedFileName) {
+          els.dataFileStatus.classList.add('linked');
+          els.dataFileStatusTitle.textContent = 'Auto-Speichern aktiv';
+          els.dataFileStatusDetail.textContent = linkedFileName + ' · ' + savedLabel;
+          els.unlinkDataFileBtn.classList.remove('hidden');
+        } else {
+          els.dataFileStatus.classList.remove('linked');
+          els.dataFileStatusTitle.textContent = 'Nur Browser-Speicher (localStorage)';
+          els.dataFileStatusDetail.textContent =
+            savedLabel + ' — Für dauerhafte Sicherung: „Neue Datei…" im App-Ordner anlegen.';
+          els.unlinkDataFileBtn.classList.add('hidden');
+        }
+        const fsSupported = supportsFileSystemAccess();
+        els.linkDataFileBtn.classList.toggle('hidden', !fsSupported);
+        els.createDataFileBtn.classList.toggle('hidden', !fsSupported);
+      }
+
+      async function loadLinkedFileContent() {
+        if (!linkedFileHandle) return;
+        const file = await linkedFileHandle.getFile();
+        const text = await file.text();
+        applyStatePayload(JSON.parse(text));
+      }
+
+      async function linkExistingDataFile() {
+        if (!supportsFileSystemAccess()) {
+          window.alert('Auto-Speichern in Dateien wird in diesem Browser nicht unterstützt. Bitte Export/Import nutzen.');
+          return;
+        }
+        try {
+          const [handle] = await window.showOpenFilePicker({
+            types: jsonFileTypes,
+            multiple: false
+          });
+          await setLinkedFile(handle);
+          await loadLinkedFileContent();
+          refreshUIFromState();
+          await writeLinkedFile();
+        } catch (err) {
+          if (err && err.name !== 'AbortError') {
+            console.warn('Datei verknüpfen fehlgeschlagen:', err);
+          }
+        }
+      }
+
+      async function createLinkedDataFile() {
+        if (!supportsFileSystemAccess()) {
+          window.alert('Auto-Speichern in Dateien wird in diesem Browser nicht unterstützt. Bitte Export/Import nutzen.');
+          return;
+        }
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: EXPORT_FILENAME,
+            types: jsonFileTypes
+          });
+          await setLinkedFile(handle);
+          await writeLinkedFile();
+        } catch (err) {
+          if (err && err.name !== 'AbortError') {
+            console.warn('Datei erstellen fehlgeschlagen:', err);
+          }
+        }
+      }
+
+      async function unlinkDataFile() {
+        linkedFileHandle = null;
+        linkedFileName = null;
+        try {
+          await clearPersistedFileHandle();
+        } catch (err) {
+          console.warn('Verknüpfung löschen fehlgeschlagen:', err);
+        }
+        updateDataFileStatus();
+      }
+
+      function exportDataFile() {
+        const blob = new Blob([JSON.stringify(getStatePayload(), null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = EXPORT_FILENAME;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function importDataFile(file) {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            applyStatePayload(JSON.parse(reader.result));
+            refreshUIFromState();
+            saveState();
+            if (linkedFileHandle) await writeLinkedFile();
+          } catch (err) {
+            window.alert('Import fehlgeschlagen: Ungültige JSON-Datei.');
+            console.warn(err);
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      async function initLinkedFile() {
+        updateDataFileStatus();
+        if (!supportsFileSystemAccess()) return;
+        try {
+          const handle = await restoreFileHandle();
+          if (!handle) return;
+          linkedFileHandle = handle;
+          linkedFileName = handle.name;
+          await loadLinkedFileContent();
+          updateDataFileStatus();
+        } catch (err) {
+          console.warn('Verknüpfte Datei konnte nicht geladen werden:', err);
+          updateDataFileStatus();
+        }
+      }
+
+      function migrateInjections(injections, referenceDate) {
+        return injections.map((inj) => {
+          const copy = {};
+          if (Number.isFinite(inj.dose)) copy.dose = inj.dose;
+          if (isValidISODate(inj.date)) {
+            copy.date = inj.date;
+          } else if (Number.isFinite(inj.day)) {
+            copy.date = addDays(referenceDate, inj.day);
+          } else if (inj.date) {
+            copy.date = inj.date;
+          }
+          if (Number.isFinite(inj.level)) {
+            copy.level = clampLevel(inj.level);
+          } else           if (Number.isFinite(copy.dose) && copy.dose > 0) {
+            copy.level = doseToLevel(copy.dose);
+          }
+          copy.penMg = Number.isFinite(inj.penMg) && inj.penMg > 0 ? inj.penMg : DEFAULT_PEN_MG;
+          return copy;
+        });
+      }
+
+      function loadState() {
+        if (!state.referenceDate) state.referenceDate = todayISO();
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          const saved = JSON.parse(raw);
+          applyStatePayload(saved);
+          if (saved.savedAt) lastSavedAt = saved.savedAt;
+        } catch (err) {
+          console.warn('Laden fehlgeschlagen:', err);
+        }
+      }
+
+      function applyStateToForm() {
+        document.querySelectorAll('#unitToggle button').forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.unit === state.unit);
+        });
+        els.showTargetBand.checked = state.showTargetBand;
+        els.targetMin.value = state.targetMin;
+        els.targetMax.value = state.targetMax;
+        els.halfLife.value = state.halfLife;
+        els.tMax.value = state.tMax;
+        els.defaultInterval.value = state.defaultInterval;
+        els.bioavailability.value = state.bioavailability;
+        els.volumeDist.value = state.volumeDist;
+        els.useFvVd.checked = state.useFvVd;
+      }
+
+      function bindEvents() {
+        els.addInjectionBtn.addEventListener('click', addInjection);
+        els.addStep1Btn.addEventListener('click', () => addInjectionSteps(1));
+        els.addStep2Btn.addEventListener('click', () => addInjectionSteps(2));
+        els.addSameLevelBtn.addEventListener('click', addInjectionSameLevel);
+
+        els.doseModeToggle.addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-mode]');
+          if (!btn) return;
+          onDoseModeSwitch(btn.dataset.mode);
+        });
+
+        els.unitToggle.addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-unit]');
+          if (!btn || btn.disabled) return;
+          document.querySelectorAll('#unitToggle button').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          scheduleRender();
+        });
+
+        [
+          els.showTargetBand,
+          els.targetMin,
+          els.targetMax,
+          els.halfLife,
+          els.tMax,
+          els.defaultInterval,
+          els.useFvVd,
+          els.bioavailability,
+          els.volumeDist
+        ].forEach((el) => el.addEventListener('input', scheduleRender));
+        els.showTargetBand.addEventListener('change', scheduleRender);
+        els.useFvVd.addEventListener('change', scheduleRender);
+
+        els.exportDataBtn.addEventListener('click', exportDataFile);
+        els.importDataBtn.addEventListener('click', () => els.importDataInput.click());
+        els.importDataInput.addEventListener('change', (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (file) importDataFile(file);
+          e.target.value = '';
+        });
+        els.linkDataFileBtn.addEventListener('click', linkExistingDataFile);
+        els.createDataFileBtn.addEventListener('click', createLinkedDataFile);
+        els.unlinkDataFileBtn.addEventListener('click', unlinkDataFile);
+
+        els.addSymptomEntryBtn.addEventListener('click', addSymptomEntry);
+        els.addCustomSymptomBtn.addEventListener('click', addCustomSymptom);
+        els.customSymptomInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            addCustomSymptom();
+          }
+        });
+      }
+
+      async function init() {
+        state.referenceDate = todayISO();
+        loadState();
+        applyStateToForm();
+        updateDoseModeUI();
+        updateUnitControls();
+        renderInjectionTable();
+        bindEvents();
+        await initLinkedFile();
+        applyStateToForm();
+        updateDoseModeUI();
+        updateUnitControls();
+        renderInjectionTable();
+        updateKaDisplay();
+        refreshSymptomUI();
+        scheduleRender();
+      }
+
+      init();
+    })();
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function (err) {
+          console.warn('Service Worker Registrierung fehlgeschlagen:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
